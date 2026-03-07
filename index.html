@@ -1,199 +1,345 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>steeny — стриминг музыки</title>
-  <meta name="description" content="steeny — минималистичный сервис стриминга музыки" />
-  <link rel="icon" type="image/png" href="logo.jpg">
-  <style>
-    :root{
-      --bg:#0b0b0b;
-      --fg:#f6f6f6;
-      --muted:#bfbfbf;
-      --accent:#ffffff;
-      --glass: rgba(255,255,255,0.04);
-      font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
-    }
-    *{box-sizing:border-box}
-    html,body{height:100%;margin:0;}
-    body{
-      background: linear-gradient(180deg,var(--bg) 0%, #070707 100%);
-      color:var(--fg);
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      padding:32px;
-      overflow:hidden;
-    }
-
-    /* снег как частицы */
-    .snow{
-      position:fixed;
-      top:0;left:0;right:0;bottom:0;
-      pointer-events:none;
-      overflow:hidden;
-      z-index:0;
-    }
-    .flake{
-      position:absolute;
-      top:-10px;
-      width:4px;height:4px;
-      border-radius:50%;
-      background:#fff;
-      opacity:0.9;
-      animation: fall linear infinite;
-    }
-    @keyframes fall{
-      0%{transform:translateY(-10px);opacity:0;}
-      10%{opacity:0.9;}
-      100%{transform:translateY(100vh);opacity:0;}
-    }
-
-    .card{
-      position:relative;
-      z-index:1;
-      width:100%;
-      max-width:960px;
-      background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
-      border:1px solid rgba(255,255,255,0.06);
-      padding:36px;
-      border-radius:16px;
-      box-shadow: 0 6px 30px rgba(0,0,0,0.6);
-      display:grid;
-      grid-template-columns: 1fr 360px;
-      gap:28px;
-      align-items:stretch;
-      animation: fadeIn 1.2s ease;
-    }
-
-    @keyframes fadeIn {
-      from{opacity:0;transform:translateY(20px)}
-      to{opacity:1;transform:translateY(0)}
-    }
-
-    .brand{
-      display:flex;
-      gap:18px;
-      align-items:center;
-      margin-bottom:12px;
-      animation: slideIn 1.4s ease;
-    }
-    @keyframes slideIn {
-      from{opacity:0;transform:translateX(-30px)}
-      to{opacity:1;transform:translateX(0)}
-    }
-
-    .logo{
-      width:72px;
-      height:72px;
-      border-radius:12px;
-      background:linear-gradient(135deg,#000,#222);
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      font-weight:700;
-      font-size:28px;
-      color:var(--accent);
-      border:1px solid rgba(255,255,255,0.06);
-      letter-spacing:1px;
-    }
-
-    h1{margin:0;font-size:36px;line-height:1.03}
-    p.lead{margin:12px 0 22px;color:var(--muted);font-size:16px}
-
-    .features{display:flex;flex-direction:column;gap:12px}
-    .feature{
-      padding:12px 14px;
-      border-radius:10px;
-      background:var(--glass);
-      border:1px solid rgba(255,255,255,0.02);
-      color:var(--fg);
-      font-size:14px;
-      animation: fadeInUp 1.6s ease;
-    }
-    @keyframes fadeInUp {
-      from{opacity:0;transform:translateY(20px)}
-      to{opacity:1;transform:translateY(0)}
-    }
-
-    .right{
-      display:flex;
-      flex-direction:column;
-      align-items:center;
-      justify-content:center;
-      gap:18px;
-      padding:18px;
-      border-radius:12px;
-      background:linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.00));
-      border-left:1px dashed rgba(255,255,255,0.03);
-      text-align:center;
-    }
-
-    .controls{display:flex;gap:10px;align-items:center;animation: fadeIn 1.8s ease;}
-    .btn{
-      display:inline-flex;align-items:center;gap:10px;justify-content:center;padding:10px 16px;border-radius:10px;border:1px solid rgba(255,255,255,0.06);background:transparent;color:var(--fg);cursor:pointer;font-weight:600;text-decoration:none;transition:transform .2s ease
-    }
-    .btn:hover{transform:scale(1.05)}
-    .btn.primary{background:var(--fg);color:var(--bg);border:none;box-shadow:0 6px 18px rgba(0,0,0,0.6)}
-
-    footer.note{grid-column:1/-1;margin-top:18px;color:var(--muted);font-size:13px;text-align:center}
-
-    @media (max-width:880px){
-      .card{grid-template-columns:1fr;}
-      .right{order:-1}
-    }
-
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>steeny — стриминг музыки</title>
+    <meta name="description" content="steeny — минималистичный сервис стриминга музыки">
+    <link rel="icon" type="image/png" href="logo.jpg">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <div class="snow" id="snow"></div>
 
-  <main class="card" role="main">
-    <section>
-      <div class="brand">
-        <div class="logo"><img src="logo.jpg" alt="" width="65px"></div>
-        <div>
-          <h1>steeny</h1>
-          <div style="color:var(--muted);font-size:13px;margin-top:6px">Бесплатный стриминговый сервис с возможностью self-hosted решения.</div>
+<div class="noise"></div>
+<canvas id="particles"></canvas>
+<div class="cursor-ring" id="cRing"></div>
+<div class="cursor-dot" id="cDot"></div>
+
+<!-- NAV -->
+<nav id="nav">
+    <div class="nav-brand">
+        <img class="nav-logo" src="logo.jpg" alt="steeny logo">
+        <span class="nav-name">steeny</span>
+        <span class="nav-tag">beta</span>
+    </div>
+    <ul class="nav-links">
+        <li><a href="#about">О проекте</a></li>
+        <li><a href="#features">Возможности</a></li>
+        <li><a href="#start">Начать</a></li>
+    </ul>
+    <a class="nav-cta" href="https://music.steeny.fun/" target="_blank" rel="noopener">Слушать</a>
+    <button class="menu-toggle" id="menuBtn" aria-label="Меню">
+        <span></span><span></span><span></span>
+    </button>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+    <div class="hero-grid-bg"></div>
+    <div class="hero-glow"></div>
+
+    <div class="hero-content">
+        <!-- FIXED: было "Бесплатный стриминг нового поколения" -->
+        <div class="hero-badge">
+            <span class="dot"></span>
+            Стриминг музыки нового поколения
         </div>
-      </div>
 
-      <p class="lead">Steeny — Скорее всего, это стартап, но без стороннего финансирования: с июня–июля 2025 команда ежедневно разрабатывает проект, тестирует функции и шлифует детали.</p>
+        <h1 class="hero-title">stee<span class="thin">ny</span></h1>
 
-      <div class="features">
-        <div class="feature">♬ Минималистичный дизайн, созданный для концентрации</div>
-        <div class="feature">⚡ Молниеносная работа приложения и загрузка треков</div>
-        <div class="feature">🔒 Конфиденциальность и контроль над данными слушателя</div>
-      </div>
+        <!-- FIXED: было "Ноль подписок за контент. Вы платите только за место в облаке" -->
+        <p class="hero-sub">
+            Минималистичный стриминг без рекламы, без сбора данных и без компромиссов в качестве звука. Честная подписка — и ничего лишнего.
+        </p>
 
-      <footer class="note">Пользуясь данным проектом, вы соглашаетесь с <br><a href="elua.html" style="color: rgb(198, 198, 248); text-decoration: none;">Пользовательским Соглашением Сервиса</a></footer>
-    </section>
+        <div class="hero-actions">
+            <a class="btn-main" href="https://music.steeny.fun/" target="_blank" rel="noopener">
+                <svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                Слушать
+            </a>
+            <a class="btn-ghost" href="https://github.com/Ivan0n/STEENY/releases/" target="_blank" rel="noopener">
+                <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+                Скачать
+            </a>
+        </div>
 
-    <aside class="right" aria-label="контроль">
-      <h2 style="margin:0;font-size:20px;">Попробуйте steeny</h2>
-      <p style="font-size:14px;color:var(--muted);margin:0 0 12px;">Скачайте проект и настройте свой собственный сервер стриминга.</p>
-      <div class="controls" role="group" aria-label="действия">
-        <a class="btn primary" id="downloadBtn" href="https://music.steeny.fun/" rel="noopener noreferrer" aria-label="Скачать с GitHub">WebVersion</a>
-        <a class="btn primary" id="downloadBtn" href="https://github.com/Ivan0n/STEENY/releases/" rel="noopener noreferrer" aria-label="Скачать с GitHub">Download</a>
-      </div>
-      <div style="font-size:13px;color:var(--muted);text-align:center;margin-top:8px;">Open‑source</div>
-    </aside>
-  </main>
+        <div class="eq" aria-hidden="true" id="eqBars"></div>
+    </div>
 
-  <script>
-    // генерируем снежные частицы
-    const snowContainer = document.getElementById('snow');
-    function createFlake(){
-      const flake = document.createElement('div');
-      flake.classList.add('flake');
-      flake.style.left = Math.random()*100+'vw';
-      flake.style.width = flake.style.height = (2+Math.random()*4)+'px';
-      flake.style.animationDuration = 4+Math.random()*8+'s';
-      snowContainer.appendChild(flake);
-      setTimeout(()=>flake.remove(),15000);
+    <div class="scroll-hint">
+        <span>scroll</span>
+        <div class="line"></div>
+    </div>
+</section>
+
+
+<div class="marquee-wrap">
+    <div class="marquee-track" id="marquee">
+        <span>Lossless Audio</span><span>◆</span>
+        <span>Self-Hosted</span><span>◆</span>
+        <span>Без рекламы</span><span>◆</span>
+        <span>Минимализм</span><span>◆</span>
+        <span>Приватность</span><span>◆</span>
+        <span>Lossless Audio</span><span>◆</span>
+        <span>Self-Hosted</span><span>◆</span>
+        <span>Без рекламы</span><span>◆</span>
+        <span>Минимализм</span><span>◆</span>
+        <span>Приватность</span><span>◆</span>
+    </div>
+</div>
+
+<!-- ABOUT -->
+<section id="about" class="sec-pad">
+    <div class="container">
+        <div class="reveal">
+            <p class="label">01 — О проекте</p>
+            <h2 class="sec-title">Музыка в её<br>первозданной форме</h2>
+        </div>
+        <div class="about-grid">
+            <div class="about-text reveal">
+                <p>
+                    <strong>Steeny</strong> — это стартап без стороннего финансирования.
+                    С июня–июля 2025 команда ежедневно разрабатывает проект, тестирует функции и шлифует детали.
+                </p>
+                <br>
+                <!-- FIXED: было "музыка должна быть свободной" -->
+                <p>
+                    Мы верим, что музыка должна звучать <strong>честно</strong> — без навязчивой рекламы, без сбора данных, без компромиссов в качестве. Поэтому steeny полностью open-source: вы можете развернуть свой собственный сервер и контролировать всё сами.
+                </p>
+            </div>
+            <div class="about-visual reveal">
+                <div class="vinyl-wrap">
+                    <div class="vinyl">
+                        <div class="vinyl-ring" style="width:240px;height:240px"></div>
+                        <div class="vinyl-ring" style="width:200px;height:200px"></div>
+                        <div class="vinyl-ring" style="width:160px;height:160px"></div>
+                        <div class="vinyl-label"><img src="logo.jpg" alt=""></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- FEATURES -->
+<section id="features" class="features-section sec-pad">
+    <div class="container">
+        <div class="reveal">
+            <p class="label">02 — Возможности</p>
+            <h2 class="sec-title">Без компромиссов</h2>
+        </div>
+        <div class="features-grid reveal">
+            <div class="feat-card">
+                <div class="feat-num">01</div>
+                <div class="feat-icon">♬</div>
+                <h3 class="feat-title">Минималистичный дизайн</h3>
+                <p class="feat-desc">Чистый интерфейс, созданный для концентрации на музыке. Ничего лишнего — только звук.</p>
+            </div>
+            <div class="feat-card">
+                <div class="feat-num">02</div>
+                <div class="feat-icon">⚡</div>
+                <h3 class="feat-title">Молниеносная скорость</h3>
+                <p class="feat-desc">Мгновенная загрузка треков и отзывчивый интерфейс. Музыка начинается без задержек.</p>
+            </div>
+            <div class="feat-card">
+                <div class="feat-num">03</div>
+                <div class="feat-icon">🔒</div>
+                <h3 class="feat-title">Приватность</h3>
+                <p class="feat-desc">Полный контроль над данными. Self-hosted — ваш сервер, ваши правила, ваша музыка.</p>
+            </div>
+            <div class="feat-card">
+                <div class="feat-num">04</div>
+                <div class="feat-icon">∞</div>
+                <h3 class="feat-title">Без рекламы</h3>
+                <p class="feat-desc">Никаких баннеров, прерываний и навязанных рекомендаций. Чистый опыт прослушивания.</p>
+            </div>
+            <div class="feat-card">
+                <div class="feat-num">05</div>
+                <div class="feat-icon">{ }</div>
+                <h3 class="feat-title">Open Source</h3>
+                <p class="feat-desc">Весь код открыт на GitHub. Вносите свой вклад, форкайте, делайте своим.</p>
+            </div>
+            <div class="feat-card">
+                <div class="feat-num">06</div>
+                <div class="feat-icon">☁</div>
+                <h3 class="feat-title">Self-Hosted</h3>
+                <p class="feat-desc">Разверните steeny на своём сервере за минуты. Полная независимость от сторонних сервисов.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- OSS BANNER -->
+<section class="oss-banner">
+    <div class="container">
+        <div class="oss-inner reveal">
+            <div class="oss-left">
+                <h3 class="oss-title">Открытый код клиента  </h3>
+                <p class="oss-desc">Open Source клиент - для вашей уверенности. Закрытый сервер - для вашей безопасности. Мы не прячем от вас код, который работает у вас в руках, но прячем код, который защищает ваши плейлисты от чужих рук.</p>
+            </div>
+            <a class="btn-ghost" href="https://github.com/Ivan0n/STEENY/" target="_blank" rel="noopener">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 00-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0020 4.77 5.07 5.07 0 0019.91 1S18.73.65 16 2.48a13.38 13.38 0 00-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 005 4.77a5.44 5.44 0 00-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 009 18.13V22"/></svg>
+                GitHub
+            </a>
+        </div>
+    </div>
+</section>
+
+<!-- CTA -->
+<section class="cta" id="start">
+    <div class="cta-glow"></div>
+    <div class="reveal">
+        <p class="label">Попробуйте steeny</p>
+        <h2 class="sec-title">Ваша музыка.<br><em>Ваш сервер.</em></h2>
+        <p class="cta-sub">Скачайте проект и настройте свой стриминг за считанные минуты.</p>
+        <div class="cta-actions">
+            <a class="btn-main" href="https://music.steeny.fun/" target="_blank" rel="noopener">
+                <svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                Web Version
+            </a>
+            <a class="btn-ghost" href="https://github.com/Ivan0n/STEENY/releases/" target="_blank" rel="noopener">
+                <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+                Download
+            </a>
+        </div>
+    </div>
+</section>
+
+<!-- MARQUEE 2 -->
+<div class="marquee-wrap">
+    <div class="marquee-track">
+        <span>steeny</span><span>◆</span>
+        <span>Слушай</span><span>◆</span>
+        <span>Создавай</span><span>◆</span>
+        <span>Контролируй</span><span>◆</span>
+        <span>steeny</span><span>◆</span>
+        <span>Слушай</span><span>◆</span>
+        <span>Создавай</span><span>◆</span>
+        <span>Контролируй</span><span>◆</span>
+        <span>steeny</span><span>◆</span>
+        <span>Слушай</span><span>◆</span>
+        <span>Создавай</span><span>◆</span>
+        <span>Контролируй</span><span>◆</span>
+    </div>
+</div>
+
+<!-- FOOTER -->
+<footer>
+    <div class="foot-left">
+        © 2026 steeny.<br>
+        <a href="elua.html">Пользовательское соглашение</a>
+    </div>
+    <ul class="foot-links">
+        <li><a href="https://github.com/Ivan0n/STEENY/" target="_blank" rel="noopener">GitHub</a></li>
+        <li><a href="https://music.steeny.fun/" target="_blank" rel="noopener">Web App</a></li>
+    </ul>
+</footer>
+
+<script>
+/* Cursor */
+const ring = document.getElementById('cRing');
+const dot  = document.getElementById('cDot');
+let mx=0,my=0,rx=0,ry=0;
+
+document.addEventListener('mousemove', e=>{
+    mx=e.clientX; my=e.clientY;
+    dot.style.left=mx+'px'; dot.style.top=my+'px';
+});
+
+(function loop(){
+    rx+=(mx-rx)*.12; ry+=(my-ry)*.12;
+    ring.style.left=rx+'px'; ring.style.top=ry+'px';
+    requestAnimationFrame(loop);
+})();
+
+document.querySelectorAll('a, button, .feat-card').forEach(el=>{
+    el.addEventListener('mouseenter',()=>ring.classList.add('active'));
+    el.addEventListener('mouseleave',()=>ring.classList.remove('active'));
+});
+
+if('ontouchstart' in window){ ring.style.display='none'; dot.style.display='none'; }
+
+/* Particles */
+const cvs = document.getElementById('particles');
+const ctx = cvs.getContext('2d');
+let W, H, pts=[];
+
+function resize(){ W=cvs.width=innerWidth; H=cvs.height=innerHeight; }
+resize(); addEventListener('resize', resize);
+
+class P{
+    constructor(){this.reset();}
+    reset(){
+        this.x=Math.random()*W;
+        this.y=Math.random()*H;
+        this.r=Math.random()*1.2+.4;
+        this.vx=(Math.random()-.5)*.25;
+        this.vy=(Math.random()-.5)*.25;
+        this.o=Math.random()*.25+.04;
     }
-    setInterval(createFlake,150);
-  </script>
+    update(){
+        this.x+=this.vx; this.y+=this.vy;
+        if(this.x<0||this.x>W||this.y<0||this.y>H) this.reset();
+    }
+    draw(){
+        ctx.beginPath();
+        ctx.arc(this.x,this.y,this.r,0,Math.PI*2);
+        ctx.fillStyle=`rgba(255,255,255,${this.o})`;
+        ctx.fill();
+    }
+}
+
+for(let i=0;i<60;i++) pts.push(new P());
+
+(function render(){
+    ctx.clearRect(0,0,W,H);
+    for(let i=0;i<pts.length;i++){
+        pts[i].update(); pts[i].draw();
+        for(let j=i+1;j<pts.length;j++){
+            const dx=pts[i].x-pts[j].x, dy=pts[i].y-pts[j].y;
+            const d=Math.sqrt(dx*dx+dy*dy);
+            if(d<130){
+                ctx.beginPath();
+                ctx.moveTo(pts[i].x,pts[i].y);
+                ctx.lineTo(pts[j].x,pts[j].y);
+                ctx.strokeStyle=`rgba(255,255,255,${.025*(1-d/130)})`;
+                ctx.lineWidth=.5;
+                ctx.stroke();
+            }
+        }
+    }
+    requestAnimationFrame(render);
+})();
+
+/* Equalizer */
+const eqWrap = document.getElementById('eqBars');
+for(let i=0;i<12;i++){
+    const b=document.createElement('i');
+    b.style.height=(8+Math.random()*24)+'px';
+    b.style.animationDelay=(i*.08)+'s';
+    b.style.animationDuration=(.8+Math.random()*.6)+'s';
+    eqWrap.appendChild(b);
+}
+
+/* Scroll reveal */
+const obs = new IntersectionObserver(entries=>{
+    entries.forEach(e=>{ if(e.isIntersecting) e.target.classList.add('visible'); });
+},{threshold:.12, rootMargin:'0px 0px -40px 0px'});
+document.querySelectorAll('.reveal').forEach(el=>obs.observe(el));
+
+/* Nav shrink */
+addEventListener('scroll',()=>{
+    document.getElementById('nav').classList.toggle('scrolled', scrollY>60);
+});
+
+/* Hero parallax */
+addEventListener('scroll',()=>{
+    const h=document.querySelector('.hero-content');
+    if(!h) return;
+    h.style.transform=`translateY(${scrollY*.25}px)`;
+    h.style.opacity=Math.max(0,1-scrollY/700);
+});
+</script>
 </body>
 </html>
