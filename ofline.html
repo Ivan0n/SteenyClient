@@ -24,6 +24,7 @@
 
                 windowBar.addEventListener("mousedown", (e) => {
                     if (e.button !== 0) return;
+                    bridge.start_window_drag();
                     isDragging = true;
                     offsetX = e.screenX - window.screenX;
                     offsetY = e.screenY - window.screenY;
@@ -31,6 +32,10 @@
 
                 window.addEventListener("mousemove", (e) => {
                     if (isDragging) {
+                        if ((e.buttons & 1) === 0) {
+                            isDragging = false;
+                            return;
+                        }
                         const newX = e.screenX - offsetX;
                         const newY = e.screenY - offsetY;
                         bridge.move_window(newX, newY);

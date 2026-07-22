@@ -4,12 +4,23 @@ import time
 import json
 import threading
 
+# Qt Quick and Chromium must render on the same GPU.  On hybrid Linux systems
+# where NVIDIA is the only installed Vulkan provider, Chromium selects NVIDIA
+# while Qt's OpenGL scene graph otherwise stays on the integrated Mesa GPU.
+# Sharing frames between those two drivers crashes in libgallium.  Route the
+# whole application through NVIDIA instead, preserving hardware acceleration.
+if (sys.platform.startswith('linux') and
+        os.path.exists('/usr/share/vulkan/icd.d/nvidia_icd.json')):
+    os.environ.setdefault('__NV_PRIME_RENDER_OFFLOAD', '1')
+    os.environ.setdefault('__GLX_VENDOR_LIBRARY_NAME', 'nvidia')
+    os.environ.setdefault('__VK_LAYER_NV_optimus', 'NVIDIA_only')
+
 from PyQt6.QtWidgets import (QApplication, QMainWindow, QWidget, QHBoxLayout,
                              QPushButton, QSpacerItem, QSizePolicy, QVBoxLayout,
                              QSystemTrayIcon, QMenu)
 from PyQt6.QtWebEngineWidgets import QWebEngineView
 from PyQt6.QtWebEngineCore import QWebEngineSettings
-from PyQt6.QtCore import QUrl, QObject, pyqtSlot, Qt, QPropertyAnimation, QEasingCurve, QTimer
+from PyQt6.QtCore import QUrl, QObject, pyqtSlot, Qt, QTimer
 from PyQt6.QtWebChannel import QWebChannel
 from PyQt6.QtGui import (QIcon, QDesktopServices, QAction, QPixmap, QPainter,
                          QColor, QFont)
@@ -499,7 +510,20 @@ class Bridge(QObject):
 
     @pyqtSlot(int, int)
     def move_window(self, x, y):
+        # Client-side positioning is forbidden on Wayland.  The compositor's
+        # native move operation uses the current pointer grab and also gives
+        # correct dragging, snapping and multi-monitor behaviour on X11.
+        handle = self.window.windowHandle()
+        if handle is not None and handle.startSystemMove():
+            return
         self.window.move(x, y)
+
+    @pyqtSlot()
+    def start_window_drag(self):
+        """Start a compositor-managed drag from a web title-bar press."""
+        handle = self.window.windowHandle()
+        if handle is not None:
+            handle.startSystemMove()
 
     @pyqtSlot(result=str)
     def get_pos(self):
@@ -844,7 +868,6 @@ class Browser(QMainWindow):
                 self.show_from_tray()
 
     def show_from_tray(self):
-        self.setWindowOpacity(1.0)
         if self.isMinimized():
             self.showNormal()
         else:
@@ -858,7 +881,6 @@ class Browser(QMainWindow):
             self.quit_from_tray()
             return
         self.hide()
-        self.setWindowOpacity(1.0)
         self._sync_tray_actions()
         if not self._tray_hint_shown and self.tray.supportsMessages():
             self._tray_hint_shown = True
@@ -1016,27 +1038,10 @@ class Browser(QMainWindow):
         if self.tray is None or not self.tray.isVisible():
             self.quit_from_tray()
             return
-        self.animation = QPropertyAnimation(self, b'windowOpacity')
-        self.animation.setDuration(300)
-        self.animation.setStartValue(1.0)
-        self.animation.setEndValue(0.0)
-        self.animation.setEasingCurve(QEasingCurve.Type.InOutQuad)
-        self.animation.finished.connect(self.hide_to_tray)
-        self.animation.start()
+        self.hide_to_tray()
 
     def fade_and_minimize(self):
-        self.animation = QPropertyAnimation(self, b'windowOpacity')
-        self.animation.setDuration(300)
-        self.animation.setStartValue(1.0)
-        self.animation.setEndValue(0.0)
-        self.animation.setEasingCurve(QEasingCurve.Type.InOutQuad)
-
-        def _finish():
-            self.showMinimized()
-            self.setWindowOpacity(1.0)
-
-        self.animation.finished.connect(_finish)
-        self.animation.start()
+        self.showMinimized()
 
 
 # ── Entry point ───────────────────────────────────────────────────────────────

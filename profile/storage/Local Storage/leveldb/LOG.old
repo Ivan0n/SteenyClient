@@ -1,0 +1,104 @@
+2026/07/22-23:28:48.847 f254 Reusing MANIFEST /home/ivan/Документы/GitHub/SteenyClient/profile/storage/Local Storage/leveldb/MANIFEST-000001
+2026/07/22-23:28:48.851 f254 Recovering log #4
+2026/07/22-23:28:48.851 f254 Reusing old log /home/ivan/Документы/GitHub/SteenyClient/profile/storage/Local Storage/leveldb/000004.log 
+2026/07/22-23:29:48.852 f258 Level-0 table #7: started
+2026/07/22-23:29:48.853 f258 Level-0 table #7: 30154 bytes OK
+2026/07/22-23:29:48.854 f258 Delete type=0 #4
+2026/07/22-23:31:49.009 f258 Level-0 table #9: started
+2026/07/22-23:31:49.010 f258 Level-0 table #9: 30066 bytes OK
+2026/07/22-23:31:49.012 f258 Delete type=0 #6
+2026/07/22-23:33:49.009 f258 Level-0 table #11: started
+2026/07/22-23:33:49.011 f258 Level-0 table #11: 31485 bytes OK
+2026/07/22-23:33:49.012 f258 Delete type=0 #8
+2026/07/22-23:33:49.012 f258 Compacting 4@0 + 0@1 files
+2026/07/22-23:33:49.013 f258 Generated table #12@0: 7 keys, 15493 bytes
+2026/07/22-23:33:49.013 f258 Compacted 4@0 + 0@1 files => 15493 bytes
+2026/07/22-23:33:49.014 f258 compacted to: files[ 0 1 0 0 0 0 0 ]
+2026/07/22-23:33:49.014 f258 Delete type=2 #3
+2026/07/22-23:33:49.014 f258 Delete type=2 #7
+2026/07/22-23:33:49.014 f258 Delete type=2 #9
+2026/07/22-23:33:49.014 f258 Delete type=2 #11
+2026/07/22-23:37:09.599 f258 Level-0 table #14: started
+2026/07/22-23:37:09.601 f258 Level-0 table #14: 29863 bytes OK
+2026/07/22-23:37:09.602 f258 Delete type=0 #10
+2026/07/22-23:37:49.009 f258 Level-0 table #16: started
+2026/07/22-23:37:49.022 f258 Level-0 table #16: 31998 bytes OK
+2026/07/22-23:37:49.025 f258 Delete type=0 #13
+2026/07/22-23:40:19.437 f258 Level-0 table #18: started
+2026/07/22-23:40:19.438 f258 Level-0 table #18: 29595 bytes OK
+2026/07/22-23:40:19.440 f258 Delete type=0 #15
+2026/07/22-23:41:49.010 f254 Level-0 table #20: started
+2026/07/22-23:41:49.012 f254 Level-0 table #20: 29545 bytes OK
+2026/07/22-23:41:49.018 f254 Delete type=0 #17
+2026/07/22-23:41:49.018 f254 Compacting 4@0 + 1@1 files
+2026/07/22-23:41:49.019 f254 Generated table #21@0: 8 keys, 17451 bytes
+2026/07/22-23:41:49.019 f254 Compacted 4@0 + 1@1 files => 17451 bytes
+2026/07/22-23:41:49.020 f254 compacted to: files[ 0 1 0 0 0 0 0 ]
+2026/07/22-23:41:49.020 f254 Delete type=2 #12
+2026/07/22-23:41:49.020 f254 Delete type=2 #14
+2026/07/22-23:41:49.020 f254 Delete type=2 #16
+2026/07/22-23:41:49.020 f254 Delete type=2 #18
+2026/07/22-23:41:49.020 f254 Delete type=2 #20
+2026/07/22-23:43:49.009 f258 Level-0 table #23: started
+2026/07/22-23:43:49.010 f258 Level-0 table #23: 31931 bytes OK
+2026/07/22-23:43:49.012 f258 Delete type=0 #19
+2026/07/22-23:48:09.872 f258 Level-0 table #25: started
+2026/07/22-23:48:09.874 f258 Level-0 table #25: 29505 bytes OK
+2026/07/22-23:48:09.875 f258 Delete type=0 #22
+2026/07/22-23:48:19.955 f258 Level-0 table #27: started
+2026/07/22-23:48:19.957 f258 Level-0 table #27: 29505 bytes OK
+2026/07/22-23:48:19.958 f258 Delete type=0 #24
+2026/07/22-23:49:49.008 f258 Level-0 table #29: started
+2026/07/22-23:49:49.010 f258 Level-0 table #29: 31889 bytes OK
+2026/07/22-23:49:49.012 f258 Delete type=0 #26
+2026/07/22-23:49:49.012 f258 Compacting 4@0 + 1@1 files
+2026/07/22-23:49:49.013 f258 Generated table #30@0: 8 keys, 17531 bytes
+2026/07/22-23:49:49.013 f258 Compacted 4@0 + 1@1 files => 17531 bytes
+2026/07/22-23:49:49.013 f258 compacted to: files[ 0 1 0 0 0 0 0 ]
+2026/07/22-23:49:49.014 f258 Delete type=2 #21
+2026/07/22-23:49:49.014 f258 Delete type=2 #23
+2026/07/22-23:49:49.014 f258 Delete type=2 #25
+2026/07/22-23:49:49.014 f258 Delete type=2 #27
+2026/07/22-23:49:49.014 f258 Delete type=2 #29
+2026/07/22-23:51:49.009 f258 Level-0 table #32: started
+2026/07/22-23:51:49.011 f258 Level-0 table #32: 32182 bytes OK
+2026/07/22-23:51:49.012 f258 Delete type=0 #28
+2026/07/22-23:53:49.010 f258 Level-0 table #34: started
+2026/07/22-23:53:49.011 f258 Level-0 table #34: 29573 bytes OK
+2026/07/22-23:53:49.013 f258 Delete type=0 #31
+2026/07/22-23:55:49.009 f258 Level-0 table #36: started
+2026/07/22-23:55:49.011 f258 Level-0 table #36: 32399 bytes OK
+2026/07/22-23:55:49.013 f258 Delete type=0 #33
+2026/07/22-23:57:49.008 f258 Level-0 table #38: started
+2026/07/22-23:57:49.010 f258 Level-0 table #38: 32761 bytes OK
+2026/07/22-23:57:49.012 f258 Delete type=0 #35
+2026/07/22-23:57:49.012 f258 Compacting 4@0 + 1@1 files
+2026/07/22-23:57:49.012 f258 Generated table #39@0: 8 keys, 18267 bytes
+2026/07/22-23:57:49.012 f258 Compacted 4@0 + 1@1 files => 18267 bytes
+2026/07/22-23:57:49.013 f258 compacted to: files[ 0 1 0 0 0 0 0 ]
+2026/07/22-23:57:49.013 f258 Delete type=2 #30
+2026/07/22-23:57:49.013 f258 Delete type=2 #32
+2026/07/22-23:57:49.013 f258 Delete type=2 #34
+2026/07/22-23:57:49.013 f258 Delete type=2 #36
+2026/07/22-23:57:49.013 f258 Delete type=2 #38
+2026/07/23-00:08:23.329 f258 Level-0 table #41: started
+2026/07/23-00:08:23.331 f258 Level-0 table #41: 29480 bytes OK
+2026/07/23-00:08:23.332 f258 Delete type=0 #37
+2026/07/23-00:11:33.269 f258 Level-0 table #43: started
+2026/07/23-00:11:33.270 f258 Level-0 table #43: 29503 bytes OK
+2026/07/23-00:11:33.272 f258 Delete type=0 #40
+2026/07/23-00:11:45.832 f258 Level-0 table #45: started
+2026/07/23-00:11:45.834 f258 Level-0 table #45: 32906 bytes OK
+2026/07/23-00:11:45.835 f258 Delete type=0 #42
+2026/07/23-00:11:55.934 f258 Level-0 table #47: started
+2026/07/23-00:11:55.935 f258 Level-0 table #47: 29538 bytes OK
+2026/07/23-00:11:55.936 f258 Delete type=0 #44
+2026/07/23-00:11:55.936 f258 Compacting 4@0 + 1@1 files
+2026/07/23-00:11:55.937 f258 Generated table #48@0: 8 keys, 18507 bytes
+2026/07/23-00:11:55.937 f258 Compacted 4@0 + 1@1 files => 18507 bytes
+2026/07/23-00:11:55.938 f258 compacted to: files[ 0 1 0 0 0 0 0 ]
+2026/07/23-00:11:55.938 f258 Delete type=2 #39
+2026/07/23-00:11:55.938 f258 Delete type=2 #41
+2026/07/23-00:11:55.938 f258 Delete type=2 #43
+2026/07/23-00:11:55.938 f258 Delete type=2 #45
+2026/07/23-00:11:55.938 f258 Delete type=2 #47
