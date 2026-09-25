@@ -1,6 +1,6 @@
 {
   "name": "steeny-client",
-  "version": "2.1.7",
+  "version": "2.1.8",
   "description": "Безопасный Electron-клиент для музыкального сервиса STEENY",
   "main": "src/main.js",
   "author": {
@@ -23,6 +23,8 @@
     "check": "node --check src/main.js && node --check src/preload.js && node --check src/auth.js && node --check src/rpc.js && node --check src/updater.js && node --check src/window-resource-manager.js && node --check src/renderer-recovery.js && node --check src/window-state.js",
     "test": "node --test test/*.test.js",
     "smoke": "electron . --smoke-test",
+    "smoke:thumbar": "electron test/electron-thumbar-smoke.js",
+    "memory:probe": "electron . --memory-probe",
     "pack": "electron-builder --dir",
     "dist": "electron-builder",
     "dist:linux": "electron-builder --linux AppImage deb rpm --x64 --publish never",

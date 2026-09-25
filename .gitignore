@@ -1,6 +1,8 @@
 profile/
 node_modules/
 dist/
+native/**/bin/
+native/**/obj/
 *.log
 *.pfx
 *.p12

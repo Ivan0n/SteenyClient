@@ -23,7 +23,9 @@ test('client enables Chromium throttling and renderer media cleanup', () => {
     'utf8',
   );
   assert.match(mainSource, /backgroundThrottling:\s*true/);
-  assert.doesNotMatch(mainSource, /backgroundThrottling:\s*false/);
+  // The audio-only renderer must keep its clock running while invisible;
+  // the heavyweight UI still uses Chromium's normal background throttling.
+  assert.match(mainSource, /backgroundPlayerWindow = new BrowserWindow\([\s\S]*?backgroundThrottling:\s*false/);
   assert.match(mainSource, /renderer-process-limit/);
   assert.match(mainSource, /process-per-site/);
   assert.match(mainSource, /max-old-space-size/);
@@ -31,6 +33,28 @@ test('client enables Chromium throttling and renderer media cleanup', () => {
   assert.match(mainSource, /if \(process\.platform === 'win32'\)/);
   assert.match(mainSource, /getAppMetrics/);
   assert.match(mainSource, /resources\.sync\(\)/);
+  assert.match(mainSource, /DESKTOP_SLEEP_DELAY_MS = 15000/);
+  assert.match(mainSource, /home\?desktop_restore=1/);
+  assert.match(mainSource, /contents\.once\('dom-ready', onReady\)/);
+  assert.match(mainSource, /await loadDesktopHomeForRestore\(\)/);
+  assert.match(mainSource, /destroyingMainForSleep = true;\s*mainWindow\.destroy\(\)/);
+  assert.match(mainSource, /createWindow\(\{ restoreFromSleep: true \}\)/);
+  assert.match(mainSource, /mainWindow\.getNormalBounds\(\)/);
+  assert.match(mainSource, /mainWindow\?\.isVisible\(\) && !mainWindow\.isMinimized\(\)/);
+  // Normal minimize keeps the original renderer/audio and its taskbar entry.
+  // Only an explicit hide-to-tray may destroy the window for deep sleep.
+  assert.match(mainSource, /if \(SMOKE_TEST \|\| quitting \|\| !desktopHiddenToTray\) return;/);
+  assert.match(mainSource, /desktopSleepPhase !== 'awake' \|\| !desktopHiddenToTray \|\| !desktopWindowIsHidden\(\)/);
+  assert.doesNotMatch(mainSource, /mainWindow\.on\('minimize', scheduleDesktopSleep\)/);
+  assert.match(mainSource, /Desktop audio alignment/);
+  assert.match(mainSource, /'window\.steenyDesktopSession\?\.finishAudioHandoff', finalState/);
+  assert.match(mainSource, /target\.setThumbarButtons\(buttons\)/);
+  assert.match(mainSource, /controlFromThumbar\('previous'\)/);
+  assert.match(mainSource, /controlFromThumbar\('toggle'\)/);
+  assert.match(mainSource, /controlFromThumbar\('next'\)/);
+  assert.match(mainSource, /label: 'Воспроизвести \/ пауза', click: \(\) => controlFromThumbar\('toggle'\)/);
+  assert.match(mainSource, /backgroundPlayerWindow\.webContents\.on\('media-paused', queueThumbarRefresh\)/);
+  assert.match(mainSource, /if \(!sleeping\) closeBackgroundPlayer\(\)/);
   // Graphics must never be downgraded to save memory.
   assert.doesNotMatch(mainSource, /enable-low-end-device-mode/);
   assert.doesNotMatch(mainSource, /disable-gpu/);
@@ -40,6 +64,10 @@ test('client enables Chromium throttling and renderer media cleanup', () => {
   assert.match(preloadSource, /videoId !== audioId/);
   assert.match(preloadSource, /if \(degraded\) suspendHeavyVideos\(\)/);
   assert.match(preloadSource, /steeny-low-memory-mode/);
+  assert.match(
+    preloadSource,
+    /html\.steeny-low-memory-mode \.app-window \{\s*display: none !important;/,
+  );
   assert.match(preloadSource, /removeAttribute\('src'\)/);
   // A visible page must never be degraded on the main process's word alone,
   // and visibilitychange has to be able to undo a stale signal.
@@ -49,7 +77,7 @@ test('client enables Chromium throttling and renderer media cleanup', () => {
   // low-memory mode can latch on for good.
   assert.match(
     mainSource,
-    /resources\.bind\(mainWindow\);\s*\n\s*mainWindow\.show\(\);/,
+    /resources\.bind\(mainWindow\);[\s\S]{0,400}else mainWindow\.show\(\);/,
   );
 });
 

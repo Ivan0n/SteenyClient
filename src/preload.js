@@ -31,6 +31,11 @@ function installResourceStyle() {
       content: none !important;
       background-image: none !important;
     }
+    /* The audio element lives outside .app-window. Skip painting the hidden
+       workspace without tearing down its DOM, route state or animations. */
+    html.steeny-low-memory-mode .app-window {
+      display: none !important;
+    }
     html.steeny-low-memory-mode :is(
       .interface-wallpaper-video,
       .fp-video-bg-layer,
@@ -121,6 +126,7 @@ function restoreHeavyVideos() {
 }
 
 
+
 function dispatchResourceMode() {
   try {
     window.dispatchEvent(new CustomEvent('steeny-resource-mode', {
@@ -168,6 +174,55 @@ function makeTitlebarControlsInteractive() {
   document.querySelector('.titlebar .logo')
     ?.style.setProperty('-webkit-app-region', 'no-drag', 'important');
 }
+
+let lastPlaybackStatus = '';
+function publishPlaybackStatus() {
+  const audio = document.getElementById('audioEl');
+  const hasTrack = Boolean(audio?.getAttribute?.('src'));
+  const status = {
+    hasTrack,
+    playing: hasTrack && !audio.paused && !audio.ended,
+    canPrevious: hasTrack,
+    canNext: hasTrack,
+    title: hasTrack ? document.getElementById('npName')?.textContent?.trim() || '' : '',
+    artist: hasTrack ? document.getElementById('npSub')?.textContent?.trim() || '' : '',
+  };
+  const serialized = JSON.stringify(status);
+  if (serialized === lastPlaybackStatus) return;
+  lastPlaybackStatus = serialized;
+  ipcRenderer.send('playback:state', status);
+}
+
+function watchPlaybackStatus() {
+  const audio = document.getElementById('audioEl');
+  if (!audio) return;
+  for (const event of ['play', 'playing', 'pause', 'ended', 'emptied', 'loadstart']) {
+    audio.addEventListener?.(event, publishPlaybackStatus);
+  }
+  if (typeof MutationObserver === 'function') {
+    new MutationObserver(publishPlaybackStatus).observe(audio, {
+      attributes: true, attributeFilter: ['src'],
+    });
+    for (const id of ['npName', 'npSub']) {
+      const label = document.getElementById(id);
+      if (label) new MutationObserver(publishPlaybackStatus).observe(label, {
+        childList: true, characterData: true, subtree: true,
+      });
+    }
+  }
+  publishPlaybackStatus();
+}
+
+// Thumbnail clicks must reach the real DOM buttons. This uses the preload's
+// existing trusted IPC channel rather than evaluating a script in the page.
+ipcRenderer.on('playback:control', (_event, action) => {
+  const ids = { previous: 'prevBtn', toggle: 'playBtn', next: 'nextBtn' };
+  if (typeof action !== 'string' || !Object.hasOwn(ids, action)) return;
+  const button = document.getElementById(ids[action]);
+  button?.click();
+  ipcRenderer.send('playback:control-result', { action, clicked: Boolean(button) });
+  publishPlaybackStatus();
+});
 
 // Each of these channels has exactly one consumer, but the web app is free to
 // re-register on re-init or a route change. Plain ipcRenderer.on would stack a
@@ -256,6 +311,7 @@ window.addEventListener('DOMContentLoaded', () => {
   domReady = true;
   document.documentElement.classList.add('desktop-client', 'electron-client');
   makeTitlebarControlsInteractive();
+  watchPlaybackStatus();
   if (lastChargingState !== null) deliverPowerState(lastChargingState);
   applyResourceMode();
   // Report immediately so the watchdog starts from a fresh page rather than
