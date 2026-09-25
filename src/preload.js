@@ -35,7 +35,8 @@ function installResourceStyle() {
       .interface-wallpaper-video,
       .fp-video-bg-layer,
       .fp-bg,
-      .fp-bg2
+      .fp-bg2,
+      .radio-video
     ) {
       display: none !important;
       background-image: none !important;
@@ -47,10 +48,16 @@ function installResourceStyle() {
 }
 
 function suspendHeavyVideos() {
-  for (const id of ['appearanceWallpaperVideo', 'fpVideo']) {
+  for (const id of ['appearanceWallpaperVideo', 'fpVideo', 'radioVideo']) {
     const video = document.getElementById(id);
-    if (!video || suspendedVideos.has(video)) continue;
-    const src = video.currentSrc || video.getAttribute('src') || '';
+    if (!video) continue;
+    const previous = suspendedVideos.get(video);
+    // The web app may replace a visual stream while hidden (radio reconnects
+    // periodically). A missing src means it is already suspended; a new src
+    // needs to be detached too, and becomes the one restored later.
+    const explicitSrc = video.getAttribute('src') || '';
+    if (previous && !explicitSrc) continue;
+    const src = explicitSrc || video.currentSrc || '';
     if (!src) continue;
     suspendedVideos.set(video, {
       src,
@@ -71,6 +78,21 @@ function restoreHeavyVideos() {
   const audio = document.getElementById('audioEl');
   for (const [video, state] of suspendedVideos) {
     if (!video.isConnected || !state.src) continue;
+    // The page may have replaced the source while hidden. Its new choice wins.
+    if (video.getAttribute('src')) continue;
+    if (video.id === 'radioVideo') {
+      // A changed or stopped station must not resurrect the old video stream.
+      const audioSrc = audio?.currentSrc || audio?.getAttribute('src') || '';
+      try {
+        const videoPath = new URL(state.src, document.baseURI).pathname;
+        const audioPath = new URL(audioSrc, document.baseURI).pathname;
+        const videoId = videoPath.match(/^\/api\/radio\/video\/(.+)$/)?.[1];
+        const audioId = audioPath.match(/^\/api\/radio\/stream\/(.+)$/)?.[1];
+        if (!videoId || videoId !== audioId) continue;
+      } catch {
+        continue;
+      }
+    }
     const resume = () => {
       const targetTime = video.id === 'fpVideo' && audio
         ? Number(audio.currentTime) || state.currentTime
@@ -97,6 +119,7 @@ function restoreHeavyVideos() {
   }
   suspendedVideos.clear();
 }
+
 
 function dispatchResourceMode() {
   try {
@@ -222,6 +245,7 @@ document.addEventListener('visibilitychange', () => applyResourceMode());
 
 function beat() {
   try {
+    if (degraded) suspendHeavyVideos();
     ipcRenderer.send('ui:heartbeat');
   } catch {
     // The renderer is being torn down; there is nothing left to report to.

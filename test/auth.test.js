@@ -96,7 +96,7 @@ test('an unreadable store asks for a fresh sign-in instead of throwing', () => {
 
 test('a network failure is flagged offline so the caller keeps the token', async () => {
   const client = createLinkClient({
-    origin: 'https://music.steeny.fun',
+    origin: 'https://music.steeny.xyz',
     fetchImpl: async () => { throw new Error('ECONNREFUSED'); },
   });
 
@@ -108,7 +108,7 @@ test('a network failure is flagged offline so the caller keeps the token', async
 
 test('a rejected token is reported as unauthorized, not as an outage', async () => {
   const client = createLinkClient({
-    origin: 'https://music.steeny.fun',
+    origin: 'https://music.steeny.xyz',
     fetchImpl: async () => jsonResponse(401, { error: 'Unauthorized' }),
   });
 
@@ -127,7 +127,7 @@ test('the flow opens the browser and returns the token once approved', async () 
       return {
         device_code: 'd'.repeat(64),
         user_code: 'ABCD-2345',
-        verification_url: 'https://music.steeny.fun/link/abc',
+        verification_url: 'https://music.steeny.xyz/link/abc',
         interval: 0,
         expires_in: 600,
       };
@@ -148,7 +148,7 @@ test('the flow opens the browser and returns the token once approved', async () 
 
   assert.equal(result.status, 'authorized');
   assert.equal(result.token, 'token-123');
-  assert.deepEqual(opened, ['https://music.steeny.fun/link/abc']);
+  assert.deepEqual(opened, ['https://music.steeny.xyz/link/abc']);
   assert.ok(states.includes('waiting'));
   assert.ok(states.includes('finishing'));
 });
@@ -158,7 +158,7 @@ test('a denial in the browser ends the flow without a token', async () => {
     start: async () => ({
       device_code: 'd'.repeat(64),
       user_code: 'ABCD-2345',
-      verification_url: 'https://music.steeny.fun/link/abc',
+      verification_url: 'https://music.steeny.xyz/link/abc',
       interval: 0,
       expires_in: 600,
     }),
@@ -179,7 +179,7 @@ test('a blip while polling does not abort a valid request', async () => {
     start: async () => ({
       device_code: 'd'.repeat(64),
       user_code: 'ABCD-2345',
-      verification_url: 'https://music.steeny.fun/link/abc',
+      verification_url: 'https://music.steeny.xyz/link/abc',
       interval: 0,
       expires_in: 600,
     }),
@@ -199,7 +199,7 @@ test('cancelling stops the flow', async () => {
       return {
         device_code: 'd'.repeat(64),
         user_code: 'ABCD-2345',
-        verification_url: 'https://music.steeny.fun/link/abc',
+        verification_url: 'https://music.steeny.xyz/link/abc',
         interval: 1,
         expires_in: 600,
       };

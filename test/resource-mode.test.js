@@ -5,6 +5,7 @@ const { EventEmitter } = require('node:events');
 const fs = require('node:fs');
 const path = require('node:path');
 const test = require('node:test');
+const vm = require('node:vm');
 const {
   collectRendererGarbage,
   createWindowResourceManager,
@@ -26,6 +27,8 @@ test('client enables Chromium throttling and renderer media cleanup', () => {
   assert.match(mainSource, /renderer-process-limit/);
   assert.match(mainSource, /process-per-site/);
   assert.match(mainSource, /max-old-space-size/);
+  assert.match(mainSource, /RunVideoCaptureServiceInBrowserProcess/);
+  assert.match(mainSource, /if \(process\.platform === 'win32'\)/);
   assert.match(mainSource, /getAppMetrics/);
   assert.match(mainSource, /resources\.sync\(\)/);
   // Graphics must never be downgraded to save memory.
@@ -33,6 +36,9 @@ test('client enables Chromium throttling and renderer media cleanup', () => {
   assert.doesNotMatch(mainSource, /disable-gpu/);
   assert.match(preloadSource, /appearanceWallpaperVideo/);
   assert.match(preloadSource, /fpVideo/);
+  assert.match(preloadSource, /radioVideo/);
+  assert.match(preloadSource, /videoId !== audioId/);
+  assert.match(preloadSource, /if \(degraded\) suspendHeavyVideos\(\)/);
   assert.match(preloadSource, /steeny-low-memory-mode/);
   assert.match(preloadSource, /removeAttribute\('src'\)/);
   // A visible page must never be degraded on the main process's word alone,
@@ -280,6 +286,146 @@ test('the watchdog reclaims only when over budget, and respects the cooldown', a
   poll();
   assert.equal(collected.length, 2);
 
+  manager.unbind();
+});
+
+function exerciseBackgroundRadio({ changeStation = false, reconnectVideo = false } = {}) {
+  const source = fs.readFileSync(path.join(__dirname, '..', 'src', 'preload.js'), 'utf8');
+  const ipcListeners = new Map();
+  const windowListeners = new Map();
+  const documentListeners = new Map();
+  const intervals = [];
+  const radioVideo = {
+    id: 'radioVideo',
+    isConnected: true,
+    paused: false,
+    ended: false,
+    currentTime: 0,
+    duration: Infinity,
+    currentSrc: 'https://music.steeny.xyz/api/radio/video/station-a?t=1',
+    src: '/api/radio/video/station-a?t=1',
+    playCount: 0,
+    pause() { this.paused = true; },
+    play() { this.paused = false; this.playCount++; return Promise.resolve(); },
+    getAttribute(name) { return name === 'src' ? this.src : null; },
+    setAttribute(name, value) { if (name === 'src') this.src = value; },
+    removeAttribute(name) { if (name === 'src') this.src = ''; },
+    addEventListener(name, listener) { if (name === 'loadedmetadata') this.onMetadata = listener; },
+    load() {
+      this.currentSrc = this.src
+        ? new URL(this.src, 'https://music.steeny.xyz/home').href : '';
+      if (this.src) this.onMetadata?.();
+    },
+  };
+  const audio = {
+    id: 'audioEl',
+    paused: false,
+    currentSrc: 'https://music.steeny.xyz/api/radio/stream/station-a?t=1',
+  };
+  const nodes = { radioVideo, audioEl: audio };
+  const document = {
+    visibilityState: 'visible',
+    baseURI: 'https://music.steeny.xyz/home',
+    head: { appendChild() {} },
+    documentElement: { classList: { add() {}, toggle() {} } },
+    createElement: () => ({}),
+    getElementById: id => nodes[id] || null,
+    querySelector: () => null,
+    addEventListener: (name, listener) => documentListeners.set(name, listener),
+  };
+  const window = {
+    addEventListener: (name, listener) => windowListeners.set(name, listener),
+    dispatchEvent() {},
+  };
+  const ipcRenderer = {
+    on: (name, listener) => ipcListeners.set(name, listener),
+    send() {},
+  };
+  vm.runInNewContext(source, {
+    require: name => {
+      assert.equal(name, 'electron');
+      return { ipcRenderer, contextBridge: { exposeInMainWorld() {} } };
+    },
+    window,
+    document,
+    console,
+    URL,
+    CustomEvent: class {},
+    setInterval: callback => { intervals.push(callback); return 0; },
+  });
+  windowListeners.get('DOMContentLoaded')();
+  document.visibilityState = 'hidden';
+  ipcListeners.get('resource-mode')(null, { lowMemory: true });
+  assert.equal(radioVideo.src, '');
+  assert.equal(audio.paused, false);
+  if (reconnectVideo) {
+    radioVideo.src = '/api/radio/video/station-a?t=2';
+    radioVideo.currentSrc = new URL(radioVideo.src, document.baseURI).href;
+    radioVideo.paused = false;
+    intervals[0]();
+    assert.equal(radioVideo.src, '');
+  }
+  if (changeStation) {
+    audio.currentSrc = 'https://music.steeny.xyz/api/radio/stream/station-b?t=2';
+  }
+  document.visibilityState = 'visible';
+  documentListeners.get('visibilitychange')();
+  return { audio, radioVideo };
+}
+
+test('background mode releases radio video while audio keeps playing', () => {
+  const { audio, radioVideo } = exerciseBackgroundRadio();
+  assert.equal(audio.paused, false);
+  assert.equal(radioVideo.src, '/api/radio/video/station-a?t=1');
+  assert.equal(radioVideo.playCount, 1);
+});
+
+test('returning from background does not resurrect a previous radio station', () => {
+  const { radioVideo } = exerciseBackgroundRadio({ changeStation: true });
+  assert.equal(radioVideo.src, '');
+  assert.equal(radioVideo.playCount, 0);
+});
+
+test('a radio video reconnected while hidden is released again', () => {
+  const { radioVideo } = exerciseBackgroundRadio({ reconnectVideo: true });
+  assert.equal(radioVideo.src, '/api/radio/video/station-a?t=2');
+  assert.equal(radioVideo.playCount, 1);
+});
+
+test('hidden window skips full GC below budget and visible window skips metric polls', () => {
+  const window = new FakeWindow();
+  const scheduled = [];
+  const collected = [];
+  let metricReads = 0;
+  let usedKb = 100 * 1024;
+  const manager = createWindowResourceManager({
+    getMetrics: () => {
+      metricReads += 1;
+      return [{ type: 'Tab', memory: { workingSetSize: usedKb } }];
+    },
+    setTimer: callback => {
+      scheduled.push(callback);
+      return { unref() {} };
+    },
+    clearTimer: () => undefined,
+    setPoll: () => ({ unref() {} }),
+    clearPoll: () => undefined,
+    collectGarbage: () => { collected.push(true); },
+  });
+
+  manager.bind(window);
+  assert.equal(manager.checkMemory(), null);
+  assert.equal(metricReads, 0);
+
+  window.visible = false;
+  window.emit('hide');
+  scheduled.at(-1)();
+  assert.equal(metricReads, 1);
+  assert.equal(collected.length, 0);
+
+  usedKb = 250 * 1024;
+  manager.checkMemory();
+  assert.equal(collected.length, 1);
   manager.unbind();
 });
 

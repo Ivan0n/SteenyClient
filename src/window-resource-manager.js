@@ -127,7 +127,10 @@ function createWindowResourceManager({
     if (lowMemory) {
       purgeTimer = setTimer(() => {
         purgeTimer = null;
-        purge();
+        // A hidden page is not necessarily a large page. Check its actual
+        // renderer footprint before attaching the debugger for a full GC.
+        if (getMetrics) checkMemory();
+        else purge();
       }, purgeDelayMs);
       purgeTimer?.unref?.();
     }
@@ -160,6 +163,9 @@ function createWindowResourceManager({
   // window over budget is simply left alone until it is hidden or minimized.
   function checkMemory() {
     if (!getMetrics || !window || window.isDestroyed?.()) return null;
+    // Visible renderers cannot be purged safely, so polling their metrics
+    // every 30 seconds is wasted work on the main thread.
+    if (!backgrounded()) return null;
     let usedKb;
     try {
       usedKb = rendererWorkingSetKb(getMetrics());
@@ -167,7 +173,6 @@ function createWindowResourceManager({
       return null;
     }
     if (usedKb <= memoryBudgetKb) return usedKb;
-    if (!backgrounded()) return usedKb;
     if (now() - lastPurgeAt < purgeCooldownMs) return usedKb;
     purge();
     return usedKb;

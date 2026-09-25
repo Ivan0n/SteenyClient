@@ -11,7 +11,6 @@ const {
   Menu,
   nativeImage,
   nativeTheme,
-  net,
   powerMonitor,
   safeStorage,
   session,
@@ -29,10 +28,11 @@ const { setStatus, checkToken } = require('./cli');
 const { createUpdateManager } = require('./updater');
 const { createWindowResourceManager } = require('./window-resource-manager');
 const { createRendererRecovery } = require('./renderer-recovery');
+const { createDebouncedWriter } = require('./window-state');
 
 // The root route renders login for a new session and redirects an authenticated
 // user to `/home`. Starting there avoids an anonymous `/home` → `/` redirect.
-const DEFAULT_APP_URL = 'https://music.steeny.fun/';
+const DEFAULT_APP_URL = 'https://music.steeny.xyz/';
 function resolveAppUrl(rawUrl) {
   try {
     const value = new URL(String(rawUrl || DEFAULT_APP_URL).trim());
@@ -48,9 +48,6 @@ function resolveAppUrl(rawUrl) {
 
 const APP_URL = resolveAppUrl(process.env.STEENY_URL);
 const APP_ORIGIN = new URL(APP_URL).origin;
-// `/home` redirects an anonymous user to the login page. Checking the origin
-// avoids treating that normal redirect as an unavailable production server.
-const BACKEND_CHECK_URL = new URL('/', APP_ORIGIN).href;
 const DEVTOOLS = process.env.STEENY_DEVTOOLS === '1'
   || process.argv.includes('--devtools');
 const SMOKE_TEST = process.argv.includes('--smoke-test');
@@ -61,6 +58,14 @@ const linkPath = path.join(__dirname, '..', 'assets', 'link.html');
 const linkUrl = pathToFileURL(linkPath).href;
 
 app.commandLine.appendSwitch('autoplay-policy', 'no-user-gesture-required');
+// Chromium starts a separate, ~120 MiB utility process merely to enumerate
+// audio outputs on the current web UI. Video capture itself is denied by our
+// session permissions; keeping that service in the browser process avoids the
+// large idle helper without changing audio capture or playback. Measured on
+// Windows with the live page (visible and hidden) before enabling by default.
+if (process.platform === 'win32') {
+  app.commandLine.appendSwitch('enable-features', 'RunVideoCaptureServiceInBrowserProcess');
+}
 // These two are disk caches. Shrinking them to 16 MiB was measured against
 // this app and moved the resident total by nothing at all, while costing
 // audio and artwork re-fetches -- so they stay generous.
@@ -307,6 +312,11 @@ function saveWindowState() {
   }
 }
 
+// Moving or resizing a frameless window emits many events per second. Writing
+// JSON synchronously for every event stalls Electron's main thread, including
+// playback controls. Persist only after the drag settles and flush on quit.
+const windowStateSaver = createDebouncedWriter(saveWindowState);
+
 function appIcon() {
   const icon = nativeImage.createFromPath(iconPath);
   return icon.isEmpty() ? undefined : icon;
@@ -348,28 +358,22 @@ function openExternal(rawUrl) {
   if (url) shell.openExternal(url).catch(() => undefined);
 }
 
-async function backendAvailable() {
-  try {
-    const response = await net.fetch(BACKEND_CHECK_URL, {
-      method: 'GET',
-      signal: AbortSignal.timeout(8000),
-    });
-    return response.ok;
-  } catch {
-    return false;
-  }
-}
-
 async function loadApp() {
   if (!mainWindow || mainWindow.isDestroyed()) return false;
-  if (await backendAvailable()) {
-    offlineLoaded = false;
+  // loadURL already reports main-frame failures through did-fail-load. A
+  // separate availability GET delayed every launch and could falsely send a
+  // healthy app offline when only the probe failed.
+  offlineLoaded = false;
+  try {
     await mainWindow.loadURL(APP_URL);
-    return true;
+    return !offlineLoaded;
+  } catch {
+    // did-fail-load may already be rendering the offline page.
+    if (!offlineLoaded && mainWindow && !mainWindow.isDestroyed()) {
+      await showOffline();
+    }
+    return false;
   }
-  offlineLoaded = true;
-  await mainWindow.loadFile(offlinePath);
-  return false;
 }
 
 // ── Sign-in state ───────────────────────────────────────────────────────────
@@ -753,9 +757,10 @@ function createWindow() {
     event.preventDefault();
     hideWindow();
   });
-  mainWindow.on('moved', saveWindowState);
-  mainWindow.on('resized', saveWindowState);
+  mainWindow.on('moved', windowStateSaver.schedule);
+  mainWindow.on('resized', windowStateSaver.schedule);
   mainWindow.on('closed', () => {
+    windowStateSaver.cancel();
     resources.unbind();
     recovery.dispose();
     if (heartbeatWatchdog) clearInterval(heartbeatWatchdog);
@@ -963,7 +968,7 @@ if (!app.requestSingleInstanceLock()) {
     quitting = true;
     resources.unbind();
     updates?.stop();
-    saveWindowState();
+    windowStateSaver.flush();
     rpc.destroy();
   });
   app.on('window-all-closed', () => {
